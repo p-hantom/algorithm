@@ -119,6 +119,33 @@ double opTwoNums1(stack<double>& num,char op){
 	return temp_ans;
 }
 
+bool opTwoNums2(stack<double>& num,char op,double& temp_ans){
+	double b=num.top();num.pop();
+	double a=num.top();num.pop();
+	if(op=='+'){
+		temp_ans=a+b;
+	}
+	else if(op=='-'){
+		temp_ans=a-b;
+	}
+	else if(op=='*'){
+		temp_ans=a*b;
+	}
+	else if(op=='/'){
+		if(b==0){
+			return false;
+		}
+		temp_ans=a/b;
+	}
+	else if(op=='%'){
+		temp_ans=(int)a%(int)b;
+	}
+	else if(op=='^'){
+		temp_ans=pow((int)a,(int)b);
+	}
+	return true;
+}
+
 int solve(char s[]){
 	int len=strlen(s);
 	int ans=0;
@@ -186,9 +213,9 @@ int solve(char s[]){
 	return ans;
 }
 
-double solve1(char s[]){
+bool solve1(char s[],double& ans){
 	int len=strlen(s);
-	double ans=0;
+	//double ans=0;
 	stack<double> num;
 	stack<Op> op;
 	int addLevel=0,i=0;
@@ -209,9 +236,11 @@ double solve1(char s[]){
 				addLevel-=MIN;
 				i++;
 			}
+			else if(isalpha(s[i])||s[i]=='.'){
+				return false;
+			}
 			
 			else{  //if s[i] is an operator
-				//flag=1;
 				if(s[i]=='-'){
 					if(i==0||(i>0&&!isdigit(s[i-1]))){
 						num.push(0);
@@ -223,7 +252,12 @@ double solve1(char s[]){
 					Op op_top=op.top();			
 					if(op_top.level>=s_i.level){
 						op.pop();
-						double temp_ans=opTwoNums1(num,op_top.getOp());
+						double temp_ans;
+						if(!opTwoNums2(num,op_top.getOp(),temp_ans)){
+							
+							return false;
+						}
+						
 						num.push(temp_ans);
 						//op.push(s_i);
 					}
@@ -239,7 +273,11 @@ double solve1(char s[]){
 		}
 		
 		else{
-			double temp_ans=opTwoNums1(num,op.top().getOp());
+			double temp_ans;//=opTwoNums1(num,op.top().getOp());
+			if(!opTwoNums2(num,op.top().getOp(),temp_ans)){
+				//cout<<"invalid input!"<<endl;
+				return false;
+			}
 			op.pop();
 			num.push(temp_ans);
 		}
@@ -250,7 +288,7 @@ double solve1(char s[]){
 		
 	}
 	
-	return ans;
+	return true;
 }
 
 
@@ -261,8 +299,13 @@ int main(){
 	
 	char s[100];
 	while(cin>>s){
-		double ans=solve1(s);
-		cout<<s<<"="<<ans<<endl;
+		double ans=0;
+		if(solve1(s,ans)){
+			cout<<s<<"="<<ans<<endl;
+		}
+		else{
+			cout<<s<<" is an invalid input"<<endl;
+		}
 	}
 	
 	
