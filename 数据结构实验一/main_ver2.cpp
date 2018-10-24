@@ -34,29 +34,6 @@ struct Op{
 	}
 };
 
-double toDouble1(char s[],int& i){
-	double ans=0,temp=1;
-	int isIntPart=1;
-	while(isdigit(s[i])||s[i]=='.'){
-		if(isdigit(s[i])){
-			if(isIntPart==1){
-				ans*=10;
-				ans+=s[i]-'0';				
-			}
-			else{
-				temp/=10;
-				ans+=temp*(s[i]-'0');
-			}
-		}
-		if(s[i]=='.'){
-			isIntPart=0;
-		}
-		i++;
-	}
-	
-	return ans;
-}
-
 bool toDouble(char s[],int& i,double& ans){
 	double temp=1;
 	int isIntPart=1,startWithZero=0;
@@ -85,7 +62,7 @@ bool toDouble(char s[],int& i,double& ans){
 		i++;
 	}
 	
-	return ans;
+	return true;
 }
 
 
