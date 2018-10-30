@@ -16,10 +16,9 @@ struct Node{
 };
 
 struct DblLinkList{
-	Node *first,*cur,*last;
+	Node *first,*last;
 	DblLinkList(){  //有头结点 
 		first=new Node("");
-		cur=first;
 		last=first;
 	}
 	void getElem(int idx,string &desStr){
@@ -69,12 +68,53 @@ struct DblLinkList{
 			p=p->next;
 		}
 		q=p->rear;
-		q->next=p->next;
-		if(p->next!=NULL){
+		q->next=p->next;   
+		if(p->next!=NULL){ //删去的是中间的 
 			p->next->rear=q;
-		}		
+		}				
+		else{ //删去的是last
+			last=q;
+		}
+		delete p;
 	}
+	void insert(int idx,string &str);
+	void deleteList();
 };
+
+void DblLinkList::deleteList(){
+	Node *p=last,*q;
+	while(p!=first){
+		q=p->rear;
+		delete p;
+		p=q;
+	}
+	last=first;
+}
+
+void duplicate(DblLinkList &des,DblLinkList &src){
+	des.deleteList();
+	Node *psrc=src.first->next;
+	while(psrc!=NULL){
+		//cout<<psrc->val<<" ";
+		des.appendNode(psrc->val);
+		psrc=psrc->next;
+	}
+	//cout<<endl;
+}
+
+void DblLinkList::insert(int idx,string &str){
+	Node *p=first,*temp=new Node(str);
+	for(int i=0;i<idx-1;i++){
+		p=p->next;
+	}
+	temp->next=p->next;
+	temp->rear=p;
+	if(temp->next!=NULL){
+		temp->next->rear=temp;		
+	}	
+	last=temp;
+	p->next=temp;
+}
 
 int idxOfStr(string &src,string &partStr){
 	int i=0,len=src.length();
@@ -115,24 +155,83 @@ class LineEditor{
 		void changeLine();
 		void findStr();
 		bool gotoLine();
+		void insert();
+		void deleteLine();
+		void view();
+		void help();
 		~LineEditor(){
 			inFile.close();
 		}
+		
+		template<class Type>
+		void swap(Type &a,Type &b);
 };
+
+template<class Type>
+void  LineEditor::swap(Type &a,Type &b){
+	Type temp=a;
+	a=b;
+	b=temp;
+}
+
+void LineEditor::help(){
+	cout<<"有效命令: b(egin) c(hange) d(el) e(nd)"<<endl
+	    <<"f(ind) g(o) h(elp) i(nsert) n(ext) p(rior)"<<endl
+	    <<"q(uit) r(ead) u(ndo) v(iew) w(rite)"<<endl;
+}
+
+void LineEditor::view(){
+	textBuffer.print();
+}
+
+void LineEditor::insert(){ //行号范围 1,2,..,textlen+1
+	int ans;
+	string str;
+	bool initialResponse=true;
+	
+	do{
+		if(initialResponse){
+			cout<<"所要插入的单个新行的行号: ";
+		}
+		else{
+			cout<<"输入有效行号: ";
+		}
+		cin>>ans;	
+		while(cin.get()!='\n');
+		initialResponse=false;	
+	} while(ans>textBuffer.length()+1||ans<=0);
+	cout<<"所要插入的新行的内容: ";
+	cin>>str;
+	while(cin.get()!='\n');
+	curLineIdx=ans;
+	
+	textBuffer.insert(ans,str);
+} 
+
+void LineEditor::deleteLine(){	
+    int len=textBuffer.length();
+    textBuffer.deleteLine(curLineIdx);
+	if(curLineIdx==len){
+		curLineIdx--;
+	}
+	
+	textBuffer.print();
+}
 
 bool LineEditor::gotoLine(){
 	int des;
 	cout<<"输入需要转到的行: ";
 	cin>>des;
-	if(des>textBuffer.length()){
+	while(cin.get()!='\n');
+	if(des>textBuffer.length()||des<=0){
 		return false;
 	}
 	curLineIdx=des;
 	return true;
 }
 
-void LineEditor::findStr(){ 
-	char ans;
+void LineEditor::findStr(){  
+	char ans; 
 	bool initialResponse=true;
 	
 	do{
@@ -151,6 +250,7 @@ void LineEditor::findStr(){
 	cout<<"输入被查找的文本串: ";
 	string strToBeFind;
 	cin>>strToBeFind;
+	while(cin.get()!='\n');
 	bool isFound=false;
 	
 	for(int i=1;i<=textBuffer.length();i++){
@@ -165,12 +265,12 @@ void LineEditor::findStr(){
 			for(int j=0;j<index;j++){
 				cout<<" ";
 			}
-			for(int j=0;i<strToBeFind.length();j++){
+			for(int j=0;j<strToBeFind.length();j++){
 				cout<<"^";
 			}
 			cout<<endl;
 			curLineIdx=i;
-			cout<<curLineIdx<<endl;
+			//cout<<curLineIdx<<endl;
 			isFound=true;
 			break;
 		}		
@@ -205,6 +305,8 @@ void LineEditor::changeLine(){
 	cout<<"输入新文本串: ";
 	string strNew;
 	cin>>strNew;
+	while(cin.get()!='\n'); 
+	bool success=false;
 		
 	for(int i=1;i<=textBuffer.length();i++){
 		if(ans=='c'&&i!=curLineIdx){
@@ -217,10 +319,16 @@ void LineEditor::changeLine(){
 		if(index!=-1){  
 			string newLine=strRow;
 			newLine.replace(index,strOld.length(),strNew);
-			textBuffer.setVal(i,newLine);			
+			textBuffer.setVal(i,newLine);	
+			success=true;		
 		}
 	} 
-	textBuffer.print();
+	if(success){
+		textBuffer.print();
+	}
+	else{
+		cout<<"未找到指定串"<<endl;
+	}
 }
 
 void LineEditor::Run(){
@@ -229,7 +337,11 @@ void LineEditor::Run(){
 	do{
 		string curLine;
 		
+		cout<<"--------------"<<endl;
 		if(curLineIdx!=0){
+//			cout<<"..."<<endl;
+//			textBuffer.print();
+//			cout<<"...buffer"<<endl;
 			textBuffer.getElem(curLineIdx,curLine);
 			cout<<curLineIdx<<":"<<curLine.c_str()<<endl<<"?";
 		}
@@ -239,13 +351,17 @@ void LineEditor::Run(){
 		
 		userCommand=getchar();
 		userCommand=tolower(userCommand);
-		while(cin.get()!='\n');
+		while(cin.get()!='\n'); 
 		
 		if(userCommand!='u'&&userCommand!='h'&&userCommand!='?'&&userCommand!='v'){
 			//存储撤销信息 
-			textUndoBuffer=textBuffer;
+			duplicate(textUndoBuffer,textBuffer);
 			curUndoLineIdx=curLineIdx;
+			
 		}
+//		cout<<"...undobuffer"<<endl;		
+//		textUndoBuffer.print();
+//		cout<<"..."<<endl;
 		
 		switch(userCommand){
 			case 'b': //begin
@@ -269,8 +385,7 @@ void LineEditor::Run(){
 					cout<<"警告：文本缓存空"<<endl;
 				}
 				else{
-					textBuffer.deleteLine(curLineIdx);
-					textBuffer.print();
+					deleteLine();					
 				}
 				break;
 			case 'e': //to the end
@@ -281,6 +396,22 @@ void LineEditor::Run(){
 					curLineIdx=textBuffer.length();
 				}
 				break;
+			case 'n': //to next line
+			    if(curLineIdx==textBuffer.length()){
+			    	cout<<"转到指定行失败"<<endl;
+			    }
+			    else{
+			    	curLineIdx+=1;
+			    }
+			    break;
+			case 'p': //to prior line
+			    if(curLineIdx==1||textBuffer.empty()){
+			    	cout<<"转到指定行失败"<<endl;
+			    }
+			    else{
+			    	curLineIdx-=1;
+			    }
+			    break;
 			case 'f': //find
 				if(textBuffer.empty()){
 					cout<<"警告：文本缓存空"<<endl;
@@ -294,6 +425,32 @@ void LineEditor::Run(){
 					cout<<"转到指定行失败"<<endl;
 				}
 				break;
+			case 'i': //insert new line
+				insert();
+				break;
+			case 'v': //view all the text
+			    if(textBuffer.empty()){
+					cout<<"警告：文本缓存空"<<endl;
+				}
+				else{
+					view();
+				}
+				break;
+			case '?': //help
+			case 'h': 
+			    help();break;
+			case 'u':	
+			    swap(textBuffer,textUndoBuffer);
+				swap(curLineIdx,curUndoLineIdx);
+				cout<<"...buffer"<<endl;		
+				textBuffer.print();
+				cout<<"..."<<endl;
+				cout<<"...UndoBuffer"<<endl;		
+				textUndoBuffer.print();
+				cout<<"..."<<endl;
+				break;
+			default:
+				cout<<"输入h或?获得帮助"<<endl; 
 		}
 		
 	}while(userCommand!='q');
@@ -307,7 +464,9 @@ int main(){
 	char infName[]="input.txt",outfName[]="";
 	LineEditor ed(infName,outfName);
 	ed.Run();
-	//string a="abcd",b="cd";
+//	string a="abcd",b="cd";
+//	ed.swap(a,b);
+//	cout<<a<<" "<<b<<endl;
 	//cout<<idxOfStr(a,b);
 	
 	return 0;
