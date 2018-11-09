@@ -5,7 +5,6 @@
 #include <iostream>
 #include <fstream>
 #include <cstdio>
-//#define LOCAL
 using namespace std;
 
 struct Node{
@@ -89,17 +88,16 @@ void DblLinkList::deleteList(){
 		p=q;
 	}
 	last=first;
+	last->next=NULL;
 }
 
 void duplicate(DblLinkList &des,DblLinkList &src){
 	des.deleteList();
 	Node *psrc=src.first->next;
 	while(psrc!=NULL){
-		//cout<<psrc->val<<" ";
 		des.appendNode(psrc->val);
 		psrc=psrc->next;
 	}
-	//cout<<endl;
 }
 
 void DblLinkList::insert(int idx,string &str){
@@ -142,14 +140,10 @@ class LineEditor{
 		
 	public:
 		LineEditor(char infName[],char outfName[]){
-			curLineIdx=0;
+			curLineIdx=0;			
 			inFile.open(infName);
-			while(!inFile.eof()){
-				string temp;
-				inFile>>temp;
-				curLineIdx++;
-				textBuffer.appendNode(temp);
-			}
+			outFile.open(outfName);
+			readFile();
 		}
 		void Run();
 		void changeLine();
@@ -159,13 +153,42 @@ class LineEditor{
 		void deleteLine();
 		void view();
 		void help();
+		void writeFile();
+		void readFile();
 		~LineEditor(){
 			inFile.close();
+			outFile.close();
+			textBuffer.deleteList();
+			textUndoBuffer.deleteList();
 		}
 		
 		template<class Type>
 		void swap(Type &a,Type &b);
 };
+
+void LineEditor::readFile(){
+	textBuffer.deleteList();
+	bool hasContent=false;
+	while(!inFile.eof()){
+		string temp;
+		inFile>>temp;
+		hasContent=true;				
+		textBuffer.appendNode(temp);
+	}
+	if(hasContent){
+		curLineIdx=1;
+	}
+	inFile.clear();
+	inFile.seekg(0, ios::beg);
+}
+
+void LineEditor::writeFile(){ //no undo op for this
+	for(int i=1;i<=textBuffer.length();i++){
+		string str;
+		textBuffer.getElem(i,str);
+		outFile<<str<<endl;
+	}
+}
 
 template<class Type>
 void  LineEditor::swap(Type &a,Type &b){
@@ -270,7 +293,6 @@ void LineEditor::findStr(){
 			}
 			cout<<endl;
 			curLineIdx=i;
-			//cout<<curLineIdx<<endl;
 			isFound=true;
 			break;
 		}		
@@ -333,15 +355,13 @@ void LineEditor::changeLine(){
 
 void LineEditor::Run(){
 	char userCommand;
+	bool toExit=false;
 	
 	do{
 		string curLine;
 		
 		cout<<"--------------"<<endl;
 		if(curLineIdx!=0){
-//			cout<<"..."<<endl;
-//			textBuffer.print();
-//			cout<<"...buffer"<<endl;
 			textBuffer.getElem(curLineIdx,curLine);
 			cout<<curLineIdx<<":"<<curLine.c_str()<<endl<<"?";
 		}
@@ -359,9 +379,6 @@ void LineEditor::Run(){
 			curUndoLineIdx=curLineIdx;
 			
 		}
-//		cout<<"...undobuffer"<<endl;		
-//		textUndoBuffer.print();
-//		cout<<"..."<<endl;
 		
 		switch(userCommand){
 			case 'b': //begin
@@ -442,18 +459,26 @@ void LineEditor::Run(){
 			case 'u':	
 			    swap(textBuffer,textUndoBuffer);
 				swap(curLineIdx,curUndoLineIdx);
-				cout<<"...buffer"<<endl;		
-				textBuffer.print();
-				cout<<"..."<<endl;
-				cout<<"...UndoBuffer"<<endl;		
-				textUndoBuffer.print();
-				cout<<"..."<<endl;
+				break;
+			case 'w':
+				if(textBuffer.empty()){
+					cout<<"警告：文本缓存空"<<endl;
+				}
+				else{
+					writeFile();
+				}
+				break;
+			case 'r':
+				readFile();
+				break; 
+			case 'q':
+				toExit=true;
 				break;
 			default:
-				cout<<"输入h或?获得帮助"<<endl; 
+				cout<<"输入h或?获得帮助或输入有效命令"<<endl;
 		}
 		
-	}while(userCommand!='q');
+	}while(toExit==false);
 }
 
 int main(){
@@ -461,13 +486,9 @@ int main(){
 	freopen("input.txt","r",stdin);
 	#endif
 	
-	char infName[]="input.txt",outfName[]="";
+	char infName[]="input.txt",outfName[]="out.txt";
 	LineEditor ed(infName,outfName);
 	ed.Run();
-//	string a="abcd",b="cd";
-//	ed.swap(a,b);
-//	cout<<a<<" "<<b<<endl;
-	//cout<<idxOfStr(a,b);
 	
 	return 0;
 }
